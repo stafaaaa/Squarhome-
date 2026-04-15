@@ -3,12 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppGrid } from "./components/AppGrid";
+import { CanvasDashboard } from "./components/CanvasDashboard";
+import { ThemeProvider } from "./lib/ThemeContext";
+import { Wallpaper } from "./components/Wallpaper";
 
 export default function App() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <AppGrid />
-    </main>
+    <ThemeProvider>
+      <Wallpaper />
+      <CanvasDashboard />
+    </ThemeProvider>
   );
 }

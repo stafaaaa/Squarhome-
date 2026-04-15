@@ -1,6 +1,6 @@
 {
   "name": "Android Kiosk Dashboard",
-  "description": "A high-performance tablet dashboard simulation with app deep-linking, 3D flip animations, and a dominant slideshow widget.",
-  "requestFramePermissions": [],
+  "description": "A high-performance tablet dashboard with a free-form canvas, absolute positioning, resizable tiles, and live wallpapers.",
+  "requestFramePermissions": ["screen-wake-lock"],
   "majorCapabilities": []
 }

@@ -15,7 +15,7 @@ export function ClockWidget() {
   const date = time.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div className="flex flex-col items-start justify-center h-full w-full p-2">
+    <div className="flex flex-col items-start justify-center h-full w-full p-6">
       <div className="flex items-baseline gap-1">
         <motion.span 
           key={hours}

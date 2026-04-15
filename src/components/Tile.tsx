@@ -2,6 +2,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
+import { useTheme } from "../lib/ThemeContext";
 
 export type TileSize = "small" | "medium" | "large" | "wide" | "tall";
 
@@ -28,14 +29,6 @@ const pulseAnimation = {
   }
 };
 
-const sizeClasses = {
-  small: "col-span-1 row-span-1 aspect-square",
-  medium: "col-span-2 row-span-2 aspect-square",
-  large: "col-span-4 row-span-4 aspect-square",
-  wide: "col-span-2 row-span-1 aspect-[2/1]",
-  tall: "col-span-1 row-span-2 aspect-[1/2]",
-};
-
 export function Tile({
   children,
   className,
@@ -48,6 +41,7 @@ export function Tile({
   notificationCount = 0,
   isNotifying = false,
 }: TileProps) {
+  const { animationsEnabled } = useTheme();
   const [isFlipped, setIsFlipped] = React.useState(false);
 
   React.useEffect(() => {
@@ -57,39 +51,52 @@ export function Tile({
   }, [animationType]);
 
   const handleTileClick = (e: React.MouseEvent) => {
-    if (animationType === "flip") {
+    if (animationsEnabled && animationType === "flip") {
       setIsFlipped(!isFlipped);
     }
     if (onClick) onClick();
   };
 
+  // Long press to enter edit mode (handled via onContextMenu for simplicity in many browsers)
+  const handleContextMenu = (e: React.MouseEvent) => {
+    // We'll let the parent handle this if possible, or just prevent default
+    // to avoid the browser's context menu on long press
+    e.preventDefault();
+  };
+
   return (
     <motion.div
-      whileHover={{ 
+      whileHover={animationsEnabled ? { 
         scale: 1.02, 
         boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
         zIndex: 10
-      }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ 
+      } : {}}
+      whileTap={animationsEnabled ? { scale: 0.98 } : {}}
+      transition={animationsEnabled ? { 
         type: "spring", 
         stiffness: 300, 
         damping: 15 
-      }}
-      animate={isNotifying ? {
-        scale: [1, 1.02, 1],
-        boxShadow: [
-          "0 8px 32px 0 rgba(0,0,0,0.37)",
-          "0 8px 32px 0 rgba(78,49,170,0.5)",
-          "0 8px 32px 0 rgba(0,0,0,0.37)"
-        ]
-      } : (animationType === "pulse" ? pulseAnimation : {})}
+      } : { duration: 0 }}
+      animate={animationsEnabled ? {
+        scale: isFlipped ? 1.02 : 1,
+        boxShadow: isFlipped 
+          ? "0 20px 40px rgba(0,0,0,0.4)" 
+          : "0 8px 32px 0 rgba(0,0,0,0.37)",
+        ...(isNotifying ? {
+          scale: [1, 1.02, 1],
+          boxShadow: [
+            "0 8px 32px 0 rgba(0,0,0,0.37)",
+            "0 8px 32px 0 rgba(78,49,170,0.5)",
+            "0 8px 32px 0 rgba(0,0,0,0.37)"
+          ]
+        } : (animationType === "pulse" ? pulseAnimation : {}))
+      } : {}}
       onClick={handleTileClick}
+      onContextMenu={handleContextMenu}
       className={cn(
         "relative group cursor-pointer overflow-hidden select-none",
-        "bg-white/8 backdrop-blur-xl border border-white/15 rounded-[16px] shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]",
+        "bg-white/8 backdrop-blur-xl border border-white/15 rounded-[16px]",
         "transition-colors duration-300",
-        sizeClasses[size],
         className
       )}
       style={{ perspective: 1000 }}
@@ -97,22 +104,16 @@ export function Tile({
       <AnimatePresence mode="wait">
         <motion.div
           key={isFlipped ? "back" : "front"}
-          initial={{ rotateY: isFlipped ? -90 : 90, opacity: 0 }}
+          initial={animationsEnabled ? { rotateY: isFlipped ? -90 : 90, opacity: 0 } : { opacity: 1 }}
           animate={{ rotateY: 0, opacity: 1 }}
-          exit={{ rotateY: isFlipped ? 90 : -90, opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
+          exit={animationsEnabled ? { rotateY: isFlipped ? 90 : -90, opacity: 0 } : { opacity: 0 }}
+          transition={animationsEnabled ? { duration: 0.4, ease: "easeOut" } : { duration: 0 }}
           className={cn(
-            "absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6",
+            "absolute inset-0 w-full h-full flex flex-col items-center justify-center",
             color.includes('/') ? color : color
           )}
         >
           {children}
-          
-          {label && (
-            <div className="absolute bottom-2 left-2 text-[10px] font-medium uppercase tracking-wider opacity-80">
-              {label}
-            </div>
-          )}
           
           {icon && !isFlipped && (
             <div className="absolute top-2 right-2 opacity-40 group-hover:opacity-100 transition-opacity">

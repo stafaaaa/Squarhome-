@@ -1,0 +1,22 @@
+{
+  "name": "Android Kiosk Dashboard",
+  "short_name": "KioskDash",
+  "description": "High-performance tablet dashboard with free-form canvas.",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/dash/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/dash/512/512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -5,14 +5,14 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-background: #1a1a2e;
-  --color-foreground: #ffffff;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   
-  --color-accent: #4e31aa;
+  --color-accent: var(--accent);
   --color-accent-foreground: #ffffff;
   
-  --color-border: rgba(255, 255, 255, 0.15);
-  --color-input: rgba(255, 255, 255, 0.15);
+  --color-border: var(--border);
+  --color-input: var(--border);
   --color-ring: #4e31aa;
   
   --radius-lg: 12px;
@@ -23,18 +23,130 @@
 }
 
 @layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #1a1a2e;
+    --border: rgba(0, 0, 0, 0.1);
+    --accent: #4e31aa;
+  }
+
+  .dark {
+    --background: #1a1a2e;
+    --foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.15);
+    --accent: #4e31aa;
+  }
+
+  .light {
+    --background: #ffffff;
+    --foreground: #1a1a2e;
+    --border: rgba(0, 0, 0, 0.1);
+    --accent: #4e31aa;
+  }
+
+  .midnight {
+    --background: #0f0c29;
+    --foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #24243e;
+  }
+
+  .forest {
+    --background: #0b1a10;
+    --foreground: #e8f5e9;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #2e7d32;
+  }
+
+  .sunset {
+    --background: #2d0b00;
+    --foreground: #fff3e0;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #e65100;
+  }
+
+  .cyberpunk {
+    --background: #000505;
+    --foreground: #00ff9f;
+    --border: rgba(0, 255, 159, 0.2);
+    --accent: #ff0055;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased overflow-hidden;
+    @apply bg-background text-foreground font-sans antialiased overflow-hidden transition-colors duration-500;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    inset: 0;
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .dark body {
     background-image: 
       radial-gradient(circle at 20% 30%, #4e31aa 0%, transparent 40%),
       radial-gradient(circle at 80% 70%, #1f4068 0%, transparent 40%),
       radial-gradient(circle at 50% 50%, #16213e 0%, 100%);
-    background-attachment: fixed;
-    background-size: cover;
   }
+
+  .light body {
+    background-image: 
+      radial-gradient(circle at 20% 30%, #e0e7ff 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, #f5f3ff 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, #fafafa 0%, 100%);
+  }
+
+  .midnight body {
+    background-image: 
+      radial-gradient(circle at 10% 20%, #302b63 0%, transparent 50%),
+      radial-gradient(circle at 90% 80%, #24243e 0%, transparent 50%),
+      linear-gradient(to bottom right, #0f0c29, #302b63, #24243e);
+  }
+
+  .forest body {
+    background-image: 
+      radial-gradient(circle at 15% 25%, #1b5e20 0%, transparent 45%),
+      radial-gradient(circle at 85% 75%, #004d40 0%, transparent 45%),
+      linear-gradient(to bottom right, #0b1a10, #1b5e20, #004d40);
+  }
+
+  .sunset body {
+    background-image: 
+      radial-gradient(circle at 25% 15%, #bf360c 0%, transparent 40%),
+      radial-gradient(circle at 75% 85%, #3e2723 0%, transparent 40%),
+      linear-gradient(to bottom right, #2d0b00, #bf360c, #3e2723);
+  }
+
+  .cyberpunk body {
+    background-image: 
+      radial-gradient(circle at 20% 20%, #ff0055 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, #00ff9f 0%, transparent 50%),
+      linear-gradient(to bottom right, #000505, #001a1a);
+  }
+}
+
+@keyframes aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.wallpaper-aurora {
+  background: linear-gradient(-45deg, #4e31aa, #1f4068, #16213e, #0f0c29);
+  background-size: 400% 400%;
+  animation: aurora 15s ease infinite;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
 }
 
 /* Custom scrollbar for Windows feel */
