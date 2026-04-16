@@ -3,6 +3,8 @@ package com.kiosk.dashboard;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -13,6 +15,20 @@ public class MainActivity extends BridgeActivity {
         // Keep screen on (Native WakeLock)
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         
+        // WebView Optimizations
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            WebSettings settings = webView.getSettings();
+            settings.setJavaScriptEnabled(true);
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            
+            // Critical for video performance
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        }
+
         // Set immersive mode
         setImmersiveMode();
     }
