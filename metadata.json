@@ -1,6 +1,6 @@
 {
-  "name": "Android Kiosk Dashboard",
+  "name": "myKiosk ",
   "description": "A high-performance tablet dashboard with a free-form canvas, absolute positioning, resizable tiles, and live wallpapers.",
-  "requestFramePermissions": ["screen-wake-lock"],
+  "requestFramePermissions": [],
   "majorCapabilities": []
 }
