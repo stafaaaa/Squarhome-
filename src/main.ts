@@ -24,6 +24,7 @@ interface WidgetConfig {
     usageScore?: number;
     lastStateUrl?: string;
     lastStateTime?: number;
+    cubeEnabled?: boolean;
     
     // Stability & Phasing
     stateChangeTime?: number;
@@ -552,12 +553,12 @@ class DashboardEngine {
         if (saved) this.widgets = JSON.parse(saved);
         else {
             this.widgets = [
-                { id: 'def-yt', type: 'youtube', name: 'YouTube', x: 50, y: 50, w: 600, h: 400, zIndex: 10, isEmbedded: true },
-                { id: 'def-spotify', type: 'spotify', name: 'Spotify', x: 670, y: 50, w: 300, h: 400, zIndex: 11, isEmbedded: true },
-                { id: 'def-calendar', type: 'calendar', name: 'Calendar', x: 50, y: 470, w: 300, h: 300, zIndex: 12, isEmbedded: true },
-                { id: 'def-weather', type: 'weather', name: 'Weather', x: 370, y: 470, w: 200, h: 200, zIndex: 13, isEmbedded: true },
-                { id: 'def-amazon', type: 'amazonmusic', name: 'Amazon Music', x: 590, y: 470, w: 300, h: 400, zIndex: 14, isEmbedded: true },
-                { id: 'def-tasks', type: 'tasks', name: 'My Tasks', x: 910, y: 470, w: 300, h: 300, zIndex: 15, isEmbedded: true }
+                { id: 'def-yt', type: 'youtube', name: 'YouTube', x: 50, y: 50, w: 600, h: 444, zIndex: 10, isEmbedded: true, cubeEnabled: true },
+                { id: 'def-spotify', type: 'spotify', name: 'Spotify', x: 670, y: 50, w: 300, h: 444, zIndex: 11, isEmbedded: true, cubeEnabled: true },
+                { id: 'def-calendar', type: 'calendar', name: 'Calendar', x: 50, y: 514, w: 300, h: 344, zIndex: 12, isEmbedded: true, cubeEnabled: true },
+                { id: 'def-weather', type: 'weather', name: 'Weather', x: 370, y: 514, w: 220, h: 244, zIndex: 13, isEmbedded: true, cubeEnabled: true },
+                { id: 'def-amazon', type: 'amazonmusic', name: 'Amazon Music', x: 610, y: 514, w: 300, h: 444, zIndex: 14, isEmbedded: true, cubeEnabled: true },
+                { id: 'def-tasks', type: 'tasks', name: 'My Tasks', x: 930, y: 514, w: 300, h: 344, zIndex: 15, isEmbedded: true, cubeEnabled: true }
             ];
             this.saveState();
         }
@@ -594,7 +595,8 @@ class DashboardEngine {
 
     private createWidgetElement(w: WidgetConfig): HTMLElement {
         const el = document.createElement('div');
-        el.className = `widget ${w.isLocked ? 'locked' : ''} ${this.selectedIds.has(w.id) ? 'selected' : ''} ${this.activeEditId === w.id ? 'focused' : ''}`;
+        // widget-wrapper (POSITION LAYER) - handles translate only
+        el.className = `widget ${w.isLocked ? 'locked' : ''} ${this.selectedIds.has(w.id) ? 'selected' : ''} ${this.activeEditId === w.id ? 'focused' : ''} ${w.cubeEnabled ? 'cube-widget' : ''}`;
         el.id = w.id;
         el.style.width = `${w.w}px`;
         el.style.height = `${w.h}px`;
@@ -603,68 +605,42 @@ class DashboardEngine {
 
         el.innerHTML = `<div class="lock-icon">🔒</div>`;
 
+        // Fixed Header
+        const header = document.createElement('div');
+        header.className = 'widget-header';
+        const icon = this.getWidgetIcon(w.type);
+        header.innerHTML = `
+            <span class="widget-icon">${icon}</span>
+            <span class="widget-title">${w.name}</span>
+        `;
+        el.appendChild(header);
+
+        // Content Host
+        const contentHost = document.createElement('div');
+        contentHost.className = 'widget-content-host';
+        
+        let contentTarget: HTMLElement = contentHost;
+        
+        if (w.cubeEnabled) {
+            this.initCube(contentHost, w);
+            contentTarget = contentHost.querySelector('.cube-face.front') as HTMLElement;
+        }
+
         const content = document.createElement('div');
         content.className = 'widget-content';
         
         if (w.isDisabled) {
             content.innerHTML = `<div style="padding:20px; font-size:10px; opacity:0.5; text-align:center">WIDGET DISABLED (TOO MANY ERRORS)</div>`;
-            el.appendChild(content);
+            contentTarget.appendChild(content);
+            el.appendChild(contentHost);
             return el;
         }
 
-        // Resource Throttling via Intersection Observer
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const iframe = content.querySelector('iframe');
-                if (entry.isIntersecting) {
-                    w.pendingUnload = false;
-                    content.style.visibility = 'visible';
-                    // Restore iframe with delay (Gradual Re-entry)
-                    if (iframe && iframe.dataset.src && iframe.src === 'about:blank') {
-                        const score = (w.usageScore || 0);
-                        const isCooldownt = this.perfMode === 'cooldown';
-                        
-                        if (!isCooldownt || score > 50) {
-                            setTimeout(() => {
-                                // Double check visibility hasn't changed
-                                if (el.style.visibility !== 'hidden') {
-                                    iframe.src = iframe.dataset.src || '';
-                                }
-                            }, 500); // 0.5s stability delay before loading heavy content
-                        }
-                    }
-                } else {
-                    // Phased Unloading Strategy
-                    content.style.visibility = 'hidden';
-                    w.pendingUnload = true;
-                    
-                    // Phase 1: Keep iframe for 15 seconds in case it's a quick scroll
-                    setTimeout(() => {
-                        if (el.style.visibility === 'hidden' && iframe && iframe.src !== 'about:blank') {
-                            // Phase 2: Actual Unload
-                            iframe.dataset.src = iframe.src;
-                            w.lastStateUrl = iframe.src;
-                            w.lastStateTime = Date.now();
-                            iframe.src = 'about:blank';
-                            w.pendingUnload = false;
-                            this.saveState();
-                        } else if (iframe && iframe.src === 'about:blank') {
-                            w.pendingUnload = false;
-                        }
-                    }, 15000); 
-                }
-            });
-        }, { threshold: 0.1 });
-        observer.observe(el);
-        this.widgetObservers.set(w.id, observer);
+        // Resource Throttling
+        this.setupResourceObserver(el, content, w);
 
         if (w.isEmbedded || w.type !== 'url') {
-            if (['url', 'youtube', 'spotify', 'amazonmusic', 'calendar'].includes(w.type)) {
-                this.renderIframe(content, w);
-            } else if (w.type === 'slideshow') this.initSlideshow(content, w);
-            else if (w.type === 'clock') this.initClock(content, w.id);
-            else if (w.type === 'tasks') this.initTasks(content, w.id);
-            else if (w.type === 'weather') this.initWeather(content, w.id);
+            this.renderWidgetContent(content, w);
         } else {
             content.innerHTML = `
                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:5px">
@@ -677,8 +653,93 @@ class DashboardEngine {
             });
         }
 
-        el.appendChild(content);
+        contentTarget.appendChild(content);
+        el.appendChild(contentHost);
 
+        // UI Buttons
+        this.addWidgetButtons(el, w);
+
+        // Interaction Logic
+        el.onpointerdown = (e) => {
+            const isHeader = (e.target as HTMLElement).closest('.widget-header');
+            if (this.isEditMode) {
+                this.startDrag(e, w);
+            } else if (w.cubeEnabled && !isHeader) {
+                const cube = el.querySelector('.cube-container') as HTMLElement;
+                if (cube) {
+                    if (!w.data) w.data = { rotX: 0, rotY: 0 };
+                    w.data.rotY = (w.data.rotY || 0) + 90;
+                    w.data.rotX = Math.floor(Math.random() * 3) * 20 - 10;
+                    console.log(`CUBE ROTATED AXIS: X=${w.data.rotX}deg, Y=${w.data.rotY}deg`);
+                    cube.style.transform = `rotateX(${w.data.rotX}deg) rotateY(${w.data.rotY}deg)`;
+                    e.stopPropagation();
+                }
+            } else {
+                this.handleLiveFocus(w);
+            }
+        };
+        
+        return el;
+    }
+
+    private getWidgetIcon(type: string): string {
+        switch(type) {
+            case 'youtube': return '📹';
+            case 'spotify': return '🎧';
+            case 'amazonmusic': return '🎵';
+            case 'calendar': return '📅';
+            case 'weather': return '🌡️';
+            case 'tasks': return '📝';
+            case 'slideshow': return '🖼️';
+            case 'clock': return '⏰';
+            default: return '📦';
+        }
+    }
+
+    private renderWidgetContent(content: HTMLElement, w: WidgetConfig) {
+        if (['url', 'youtube', 'spotify', 'amazonmusic', 'calendar'].includes(w.type)) {
+            this.renderIframe(content, w);
+        } else if (w.type === 'slideshow') this.initSlideshow(content, w);
+        else if (w.type === 'clock') this.initClock(content, w.id);
+        else if (w.type === 'tasks') this.initTasks(content, w.id);
+        else if (w.type === 'weather') this.initWeather(content, w.id);
+    }
+
+    private setupResourceObserver(el: HTMLElement, content: HTMLElement, w: WidgetConfig) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const iframe = content.querySelector('iframe');
+                if (entry.isIntersecting) {
+                    w.pendingUnload = false;
+                    content.style.visibility = 'visible';
+                    if (iframe && iframe.dataset.src && iframe.src === 'about:blank') {
+                        setTimeout(() => {
+                            if (content.style.visibility !== 'hidden') {
+                                iframe.src = iframe.dataset.src || '';
+                            }
+                        }, 500);
+                    }
+                } else {
+                    content.style.visibility = 'hidden';
+                    w.pendingUnload = true;
+                    setTimeout(() => {
+                        if (content.style.visibility === 'hidden' && iframe && iframe.src !== 'about:blank') {
+                            iframe.dataset.src = iframe.src;
+                            w.lastStateUrl = iframe.src;
+                            w.lastStateTime = Date.now();
+                            iframe.src = 'about:blank';
+                            w.pendingUnload = false;
+                            this.saveState();
+                        }
+                    }, 15000); 
+                }
+            });
+        }, { threshold: 0.1 });
+        observer.observe(el);
+        this.widgetObservers.set(w.id, observer);
+    }
+
+    private addWidgetButtons(el: HTMLElement, w: WidgetConfig) {
         const delBtn = document.createElement('button');
         delBtn.className = 'delete-btn';
         delBtn.innerHTML = '✕';
@@ -695,22 +756,16 @@ class DashboardEngine {
         resizer.className = 'resize-handle';
         resizer.onpointerdown = (e) => this.startResize(e, w);
         el.appendChild(resizer);
+    }
 
-        el.onpointerdown = (e) => this.startDrag(e, w);
-        
-        el.onpointerup = () => {
-            w.lastActivity = Date.now();
-            w.usageScore = (w.usageScore || 0) + 1;
-            if (!this.isEditMode) {
-                this.activeEditId = w.id;
-                this.widgets.forEach(item => {
-                    const widEl = document.getElementById(item.id);
-                    if (widEl) widEl.classList.toggle('focused', item.id === w.id);
-                });
-            }
-        };
-
-        return el;
+    private handleLiveFocus(w: WidgetConfig) {
+        w.lastActivity = Date.now();
+        w.usageScore = (w.usageScore || 0) + 1;
+        this.activeEditId = w.id;
+        this.widgets.forEach(item => {
+            const widEl = document.getElementById(item.id);
+            if (widEl) widEl.classList.toggle('focused', item.id === w.id);
+        });
     }
 
     private renderIframe(container: HTMLElement, w: WidgetConfig) {
@@ -890,6 +945,27 @@ class DashboardEngine {
         this.registerInterval(widgetId, intervalId);
     }
 
+    private initCube(container: HTMLElement, w: WidgetConfig) {
+        // Set half-size for 3D translation (based on content area size)
+        const contentW = w.w;
+        const contentH = w.h - 44; // Subtract header height
+        const halfSize = Math.min(contentW, contentH) / 2;
+        container.style.setProperty('--half', `${halfSize}px`);
+
+        container.innerHTML = `
+            <div class="cube-container" style="transform: rotateX(0deg) rotateY(0deg)">
+                <div class="cube-face front"></div>
+                <div class="cube-face back" style="background:#000; opacity:0.8">
+                    <div style="font-size:10px; opacity:0.5">STATUS ACTIVE</div>
+                </div>
+                <div class="cube-face left" style="background:#000; border-color:rgba(255,255,255,0.1)"></div>
+                <div class="cube-face right" style="background:#000; border-color:rgba(255,255,255,0.1)"></div>
+                <div class="cube-face top" style="background:#000; border-color:rgba(255,255,255,0.1)"></div>
+                <div class="cube-face bottom" style="background:#000; border-color:rgba(255,255,255,0.1)"></div>
+            </div>
+        `;
+    }
+
     private initClock(container: HTMLElement, widgetId: string) {
         const timeEl = document.createElement('div');
         timeEl.style.cssText = 'height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:monospace;';
@@ -1014,6 +1090,7 @@ class DashboardEngine {
         if (!this.isEditMode || w.isLocked) return;
         if ((e.target as HTMLElement).className === 'resize-handle') return;
 
+        console.log("DRAG ACTIVE");
         this.dragStartX = e.clientX;
         this.dragStartY = e.clientY;
         
