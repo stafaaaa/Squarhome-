@@ -1,21 +1,25 @@
 {
-  "name": "myKiosk-One",
-  "short_name": "myKiosk",
-  "description": "Production-ready Kiosk Dashboard",
-  "start_url": ".",
-  "display": "fullscreen",
+  "name": "M-yKioskOnepro",
+  "short_name": "KioskPro",
+  "description": "High-performance tablet dashboard with 3D elements",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
     {
       "src": "https://picsum.photos/seed/kiosk/192/192",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "https://picsum.photos/seed/kiosk/512/512",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
